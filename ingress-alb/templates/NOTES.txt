@@ -1,0 +1,1 @@
+Ingress resources deployed. Ensure NodePort is being used.

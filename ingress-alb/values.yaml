@@ -1,0 +1,41 @@
+# Default values for <CHARTNAME>.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+privatesuffix: private.dummy
+
+appname_main:
+  extraIngressAnnotations: {}
+  private:
+    enabled: false
+    extraIngressAnnotations: {}
+    groupName: AAA-eks-prv
+    listenPorts: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    targetType: "ip"
+  public:
+    enabled: false
+    extraIngressAnnotations: {}
+    groupName: AAA-eks-pub
+    listenPorts: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    targetType: "ip"
+    # hosts are internally-managed records
+    hosts: 
+      - appname.public.onsolve.dummy
+    # extraHosts are externally-managed records
+    extraHosts: []
+  cloudflare:
+    enabled: false
+    extraIngressAnnotations: {}
+    groupName: AAA-eks-pub
+    listenPorts: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    targetType: "ip"
+    hosts:
+      - appname.public.onsolve.dummy
+    extraHosts: []
+    dnsrecord:
+      enabled: false
+      records:
+      - dnsName: example.cloudflare.dummy
+        recordType: A
+        targets:
+          - 1.1.1.1
+          - 2.2.2.2

@@ -1,0 +1,121 @@
+{{ if .Values.appname_main.private.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: appname-main-private
+  annotations:
+    external-dns.custom/zonetype: private
+    external-dns.alpha.kubernetes.io/ingress-hostname-source: annotation-only
+    external-dns.alpha.kubernetes.io/hostname: "appname-main.{{ .Values.privatesuffix }}"
+    alb.ingress.kubernetes.io/group.name: {{ .Values.appname_main.private.groupName }}
+    alb.ingress.kubernetes.io/listen-ports: '{{ .Values.appname_main.private.listenPorts }}'
+    alb.ingress.kubernetes.io/target-type: {{ .Values.appname_main.private.targetType }}
+  {{- with .Values.appname_main.extraIngressAnnotations }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.appname_main.private.extraIngressAnnotations }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: alb
+  rules:
+    - host: "appname-main.{{ .Values.privatesuffix }}"
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: appname-main
+              port:
+                number: 80
+{{ end }}
+---
+{{ if .Values.appname_main.public.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: appname-main-public
+  annotations:
+    external-dns.custom/zonetype: public
+    external-dns.alpha.kubernetes.io/ingress-hostname-source: annotation-only
+    external-dns.alpha.kubernetes.io/hostname: "{{ join "," .Values.appname_main.public.hosts }}"
+    alb.ingress.kubernetes.io/group.name: {{ .Values.appname_main.public.groupName }}
+    alb.ingress.kubernetes.io/listen-ports: '{{ .Values.appname_main.public.listenPorts }}'
+    alb.ingress.kubernetes.io/target-type: {{ .Values.appname_main.public.targetType }}
+  {{- with .Values.appname_main.extraIngressAnnotations }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.appname_main.public.extraIngressAnnotations }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: alb
+  rules:
+  {{- range (concat .Values.appname_main.public.hosts .Values.appname_main.public.extraHosts) }}
+    - host: "{{ . }}"
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: appname-main
+              port:
+                number: 80
+  {{- end }}
+{{ end }}
+---
+{{ if .Values.appname_main.cloudflare.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: appname-main-cloudflare
+  annotations:
+    external-dns.custom/zonetype: cloudflare
+    external-dns.alpha.kubernetes.io/ingress-hostname-source: annotation-only
+    external-dns.alpha.kubernetes.io/hostname: "{{ join "," .Values.appname_main.cloudflare.hosts }}"
+    alb.ingress.kubernetes.io/group.name: {{ .Values.appname_main.cloudflare.groupName }}
+    alb.ingress.kubernetes.io/listen-ports: '{{ .Values.appname_main.cloudflare.listenPorts }}'
+    alb.ingress.kubernetes.io/target-type: {{ .Values.appname_main.cloudflare.targetType }}
+  {{- with .Values.appname_main.extraIngressAnnotations }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.appname_main.cloudflare.extraIngressAnnotations }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: alb
+  rules:
+  {{- range concat ( .Values.appname_main.cloudflare.hosts ) (.Values.appname_main.cloudflare.extraHosts) }}
+    - host: "{{ . }}"
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: appname-main
+              port:
+                number: 80
+  {{- end }}
+{{ end }}
+---
+{{- if and .Values.appname_main.cloudflare.enabled .Values.appname_main.cloudflare.dnsrecord.enabled }}
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: appname-main-cloudflare
+  annotations:
+    external-dns.custom/zonetype: public
+spec:
+  endpoints:
+  {{- range ( .Values.appname_main.cloudflare.dnsrecord.records ) }}
+    - dnsName: "{{ .dnsName }}"
+      recordType: "{{ .recordType }}"
+      targets:
+      {{- range .targets }}
+        - {{ . }}
+      {{- end }}
+  {{- end }}
+{{- end }}

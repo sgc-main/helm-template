@@ -1,0 +1,7 @@
+apiVersion: v2
+name: <CHARTNAME>
+description: A Helm chart for <CHARTNAME>
+type: application
+# the (chart) version is set elsewhere
+version: 0.0.0
+appVersion: "0.1.0"

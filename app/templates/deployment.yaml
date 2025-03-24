@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  {{- with .Values.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  name: {{ include "<CHARTNAME>.fullname" . }}
+  labels:
+    {{- if .Values.datadog.enabled }}
+    tags.datadoghq.com/service: "{{ .Chart.Name }}"
+    tags.datadoghq.com/version: "{{ .Values.image.tag }}"
+    {{- end }}
+    {{- include "<CHARTNAME>.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.hpa.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "<CHARTNAME>.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with merge .Values.podAnnotations .Values.extraPodAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- if .Values.datadog.enabled }}
+        tags.datadoghq.com/service: "{{ .Chart.Name }}"
+        tags.datadoghq.com/version: "{{ .Values.image.tag }}"
+        admission.datadoghq.com/enabled: "true"
+        admission.datadoghq.com/config.mode: "socket"
+        {{- end }}
+        {{- with .Values.extraPodLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- include "<CHARTNAME>.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "<CHARTNAME>.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- range $key, $val := .Values.extraEnvVars }}
+            - name: {{ $key }}
+              value: {{ $val }}
+            {{- end }}
+            - name: EXAMPLE_CONF_NAME
+              value: {{ .Values.bespoke_configuration.test_key }}
+            {{- if .Values.datadog.enabled }}
+            - name: "DD_TAGS"
+              value: "chart:{{ $.Chart.Name }}"
+            - name: "DD_DATA_STREAMS_ENABLED"
+              value: "true"
+            - name: "DD_RUNTIME_METRICS_ENABLED"
+              value: "true"
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
