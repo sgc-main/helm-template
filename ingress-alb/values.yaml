@@ -19,7 +19,7 @@ appname_main:
     targetType: "ip"
     # hosts are internally-managed records
     hosts: 
-      - appname.public.onsolve.dummy
+      - appname.public.domain.dummy
     # extraHosts are externally-managed records
     extraHosts: []
   cloudflare:
@@ -29,7 +29,7 @@ appname_main:
     listenPorts: '[{"HTTP": 80}, {"HTTPS": 443}]'
     targetType: "ip"
     hosts:
-      - appname.public.onsolve.dummy
+      - appname.public.domain.dummy
     extraHosts: []
     dnsrecord:
       enabled: false
